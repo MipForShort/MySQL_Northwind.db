@@ -3,11 +3,12 @@
 Hello, this can be used if you already have installed mysql and libmysqlclient-dev.
 
 A quick google search will do if not.
+
 ---
 
 ## Functions
 
-Also, currently we can only create the database on mysql, 
+Currently we can only create the database on mysql, 
 with a script that it is used from a template file.
 
 By default it will be added to the git repository so you
