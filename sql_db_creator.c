@@ -47,7 +47,6 @@ int main(void)
 
 	/* Function that checks if we connected succesfully */
 	/*check_connection(conn);*/
-
 	if (check_connection(conn) == EXIT_FAILURE)
 	{
 		printf("Connection failed.\n");
@@ -59,11 +58,11 @@ int main(void)
 
 	/* Function to select the db in mysql */
 	select_database(conn);
-
+	
 	/* Function to read the db schema from another .db file */
 	read_schema(conn);
 
-    /* End connection successfully */
+	/* End connection successfully */
     mysql_close(conn);
     return EXIT_SUCCESS;
 }
