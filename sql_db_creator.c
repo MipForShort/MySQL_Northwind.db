@@ -25,11 +25,12 @@ char *server = "localhost";
 char *user = "root";
 char password[MAX_P]; /* Max array for a password */
 
-void execute_sql(MYSQL *conn, const char *query);/* Prototype to execute query */
+MYSQL_RES *execute_sql(MYSQL *conn, const char *query); /* Prototype to execute query */
 int check_connection(MYSQL *conn); /* Prototype to check connection */
 void create_database(MYSQL *conn); /* Prototype to create the database */
 int select_database(MYSQL *conn); /* Prototype to select the database in mysql */
 int read_schema(MYSQL *conn); /* Prototype to read schema from a .db file */
+void describe_database(MYSQL *conn, const char *query); /* Prototype to describe the db */
 
 /* Main function */
 int main(void)
@@ -45,9 +46,10 @@ int main(void)
     /* We initialize connector with NULL */
     conn = mysql_init(NULL);
     
-    /* Function that checks if we connected succesfully */
+    /* Function that checks if we connected succesfully, old way */
     /*check_connection(conn);*/
     
+    /* New way to check connection */
     if (check_connection(conn) == EXIT_FAILURE)
     {
         printf("Connection failed.\n");
@@ -63,20 +65,27 @@ int main(void)
     /* Function to read the db schema from another .db file */
     read_schema(conn);
 
+    /* Function to describe the db, this just calls execute_sql with the qry as second parameter */
+    describe_database(conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Northwind';");
+
     /* End connection successfully */
     mysql_close(conn);
     return EXIT_SUCCESS;
 }
 
-/* Funct to exect_sql qrys */
-void execute_sql(MYSQL *conn, const char *query)
+/* Funct to exect_sql qrys and store them */
+MYSQL_RES *execute_sql(MYSQL *conn, const char *query)
 {
     /* If we receive anything other than 0 from the query then we print error message */
     if (mysql_query(conn, query) != 0)
     {
         fprintf(stderr, "\nError executing query %s\n%s\n", query, mysql_error(conn));
-        return;
+        /* Change to return what is stored in conn when executed */
+        return mysql_store_result(conn);
     }
+
+    /* We return what is stored in our connector */
+    return mysql_store_result(conn);
 }
 
 /* Func to check the connection */
@@ -158,4 +167,32 @@ int read_schema(MYSQL *conn)
     }
 
     printf("Schema Script loaded successfully\n");
+}
+
+/* Function to describe a database with a specific query */
+void describe_database(MYSQL *conn, const char *query)
+{
+    /* We create a result variable that stores the result of execute_sql */
+    MYSQL_RES *result = execute_sql(conn, query);
+
+    /* If the result is NULL then we print error */
+    if (result == NULL)
+    {
+        fprintf(stderr, "\nError getting the result.\n");
+    }
+    /* Else we get a result */
+    else
+    {
+        /* Apparently we need a row datatype for parsing rows */
+        MYSQL_ROW row;
+        printf("\nTables in Northwind:\n");
+        /* This loop parses every row with mysql_fetch_row until it is NULL */
+        while ((row = mysql_fetch_row(result)) != NULL)
+        {
+            printf("- %s\n", row[0]);  // Print row
+        }
+    
+        /* We need to free the result */
+        mysql_free_result(result);
+    }
 }
