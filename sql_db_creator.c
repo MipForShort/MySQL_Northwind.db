@@ -82,7 +82,7 @@ void execute_sql(MYSQL *conn, const char *query)
 /* Func to check the connection */
 int check_connection(MYSQL *conn)
 {
-	/* We check that the connector is not NULL when it was returned previously */
+    /* We check that the connector is not NULL when it was returned previously */
     if (conn == NULL)
     {
        printf("mysql_init() failed\n");
@@ -103,7 +103,7 @@ int check_connection(MYSQL *conn)
 /* Func to create the db */
 void create_database(MYSQL *conn)
 {
-	/* We call our execute_sql func with the qry to exec */
+    /* We call our execute_sql func with the qry to exec */
     execute_sql(conn, "CREATE DATABASE IF NOT EXISTS Northwind;");
     printf("Database 'Northwind' created or already existing\n");
 }
@@ -111,7 +111,7 @@ void create_database(MYSQL *conn)
 /* Func to select the created db, mysql need this to work with only one db */
 int select_database(MYSQL *conn)
 {
-	/* Condition to select Northwind db in MySQL */
+    /* Condition to select Northwind db in MySQL */
     if (mysql_select_db(conn, "Northwind") != 0)
     {
         fprintf(stderr, "\nError selecting the database: %s\n", mysql_error(conn));
