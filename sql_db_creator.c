@@ -189,7 +189,30 @@ void describe_database(MYSQL *conn, const char *query)
         /* This loop parses every row with mysql_fetch_row until it is NULL */
         while ((row = mysql_fetch_row(result)) != NULL)
         {
-            printf("- %s\n", row[0]);  // Print row
+            printf("- %s\n", row[0]);  // Print table name
+
+            /* Query to describe the table */
+            char describe_query[MAX_Q];
+            /* This snprintf will make our describe_query start with DESCRIBE and add what our row says  */
+            snprintf(describe_query, sizeof(describe_query), "DESCRIBE %s;", row[0]);
+
+            MYSQL_RES *desc_result = execute_sql(conn, describe_query);
+
+            /* If we get a result from desc_result */
+            if (desc_result != NULL)
+            {
+                MYSQL_ROW desc_row;
+                printf("  Columns:\n");
+                while((desc_row = mysql_fetch_row(desc_result)) != NULL)
+                {
+                    printf("    - %s (%s)\n", desc_row[0], desc_row[1]); /* This prints name of field and its data type */
+                }
+                mysql_free_result(desc_result);
+            }
+            else
+            {
+                fprintf(stderr, "\n  Error describing table %s\n", row[0]);
+            }
         }
     
         /* We need to free the result */
