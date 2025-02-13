@@ -180,48 +180,53 @@ void describe_database(MYSQL *conn, const char *query)
         while ((row = mysql_fetch_row(result)) != NULL)
         {
             printf("- %s\n", row[0]);  // Print table name
-
-            /* Query to describe the table */
-            char describe_query[MAX_Q];
-            /* This snprintf will make our describe_query start with DESCRIBE and add what our row says  */
-            snprintf(describe_query, sizeof(describe_query), "DESCRIBE %s;", row[0]);
-
-            MYSQL_RES *desc_result = execute_sql(conn, describe_query);
-
-            /* If we get a result from desc_result */
-            if (desc_result != NULL)
-            {
-                MYSQL_ROW desc_row;
-                printf("  Columns:\n");
-                while((desc_row = mysql_fetch_row(desc_result)) != NULL)
-                {
-                    printf("    - %s (%s)\n", desc_row[0], desc_row[1]); /* This prints name of field and its data type */
-                }
-                mysql_free_result(desc_result);
-            }
-            else
-            {
-                fprintf(stderr, "\n  Error describing table %s\n", row[0]);
-            }
         }
-    
+ 
         /* We need to free the result */
         mysql_free_result(result);
     }
 }
 
-int print_menu(MYSQL *conn)
+void print_table (MYSQL *conn, char *table)
+{
+	/* Query to describe the table */
+    char describe_query[MAX_Q];
+    /* This snprintf will make our describe_query start with DESCRIBE and add what our row says  */
+    snprintf(describe_query, sizeof(describe_query), "DESCRIBE %s;", table);
+
+    MYSQL_RES *desc_result = execute_sql(conn, describe_query);
+
+    /* If we get a result from desc_result */
+    if (desc_result != NULL)
+    { 
+        MYSQL_ROW desc_row;
+        printf("  Columns:\n");
+        while((desc_row = mysql_fetch_row(desc_result)) != NULL)
+        {
+            printf("    - %s (%s)\n", desc_row[0], desc_row[1]); /* This prints name of field and its data type */
+        }
+        mysql_free_result(desc_result);
+    }
+    else
+    {
+        fprintf(stderr, "\n  Error describing table %s\n", table);
+    }
+
+}
+
+int print_menu (MYSQL *conn)
 {
     int menu_option;
 
     do
     {
-        printf("\nMenu:\n1.- Create Northwind db / Select it.\n2.- Execute SQL Script for Northwind Schema.\n3.- Describe Northwind db.\n4.- Select Query on table.\n5.- Clear terminal.\n6.- Exit.\n");
+        printf("\nMenu:\n1.- Create Northwind db / Select it.\n2.- Execute SQL Script for Northwind Schema.\n3.- Describe Northwind db.\n4.- Describe a table.\n5.- Query SELECT * on table.\n6.- Clear terminal.\n7.- Exit.\n");
 
         scanf("%d", &menu_option);
 
         switch(menu_option)
         {
+            /* Case to create-use Northwind db  */
             case 1:
                 /* Function to create the db */
                 create_database(conn);
@@ -231,6 +236,7 @@ int print_menu(MYSQL *conn)
                 clear_terminal();
                 print_menu(conn);
                 break;
+            /* Case to execute the create schema based script */    
             case 2:
                 /* Function to read the db schema from another .db file */
                 read_schema(conn);
@@ -238,25 +244,43 @@ int print_menu(MYSQL *conn)
                 clear_terminal();
                 print_menu(conn);
                 break;
+            /* Case to describe Northwind db */
             case 3:
+				clear_terminal();
                 /* Function to describe the db, this just calls execute_sql with the qry as second parameter */
                 describe_database(conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Northwind';");
                 print_menu(conn);
                 break;
+            /* Case to describe a table from the db */
             case 4:
+				/* Here we describe db to select table to read records from */
                 describe_database(conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Northwind';");
-                char table[MAX_P];
+				char table[MAX_P]; /* Variable for table name */
+				printf("Table to select data from:\n");
+                scanf("%s", table);
+				/* Function that describes information about the table */
+				print_table(conn, table);
+                print_menu(conn);
+                break;
+            /* Case for a SELECT * FROM table */
+			case 5:
+                /* Here we describe db to select table to read records from */
+                describe_database(conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Northwind';");
+                //char table[MAX_P]; /* Variable for table name */
                 printf("Table to select data from:\n");
                 scanf("%s", table);
                 clear_terminal();
+				/* Function to read SELECT query */
                 read_records(conn, table);
                 print_menu(conn);
-                break;
-            case 5:
+				break;
+            /* Case for cleaning terminal */
+            case 6:
                 clear_terminal();
                 print_menu(conn);
                 break;
-            case 6:
+            /* Case to exit from file */
+            case 7:
                 /* End connection successfully */
                 mysql_close(conn);
                 clear_terminal();
@@ -297,14 +321,14 @@ void read_records(MYSQL *conn, char *table)
         int num_fields = mysql_num_fields(result);
         MYSQL_FIELD *fields = mysql_fetch_fields(result);
         
-        // Encontrar el largo máximo para cada columna
+        /* Find the maximun on each column */
         int max_lengths[num_fields];
         for (int i = 0; i < num_fields; i++) 
         {
-            max_lengths[i] = strlen(fields[i].name);  // Inicializa con el tamaño de los nombres de campo
+            max_lengths[i] = strlen(fields[i].name);  /* Initialize with the fields name */
         }
 
-        // Recorremos los registros para encontrar la longitud máxima de cada campo
+		/* We travel to each row to find the longest field on each field */
         MYSQL_ROW row;
         while ((row = mysql_fetch_row(result)) != NULL) 
         {
@@ -321,26 +345,26 @@ void read_records(MYSQL *conn, char *table)
             }
         }
 
-        // Imprimir los nombres de las columnas alineados
+        /* Print the name of each column aligned */
         for (int i = 0; i < num_fields; i++) 
         {
-            printf("%-*s  ", max_lengths[i], fields[i].name);  // Alineación izquierda con el tamaño máximo y dos espacios
+            printf("%-*s  ", max_lengths[i], fields[i].name);  /* Allign to the left for the max length of field name plus two blank spaces */
         }
         printf("\n");
 
-        // Volver al principio para imprimir los registros
-        mysql_data_seek(result, 0);  // Restablecer el puntero al primer registro
+		/* Back to the beginning to print registries */
+        mysql_data_seek(result, 0);  /* Restablish pointer back to first regirter */
         while ((row = mysql_fetch_row(result)) != NULL) 
         {
             for (int i = 0; i < num_fields; i++) 
             {
                 if (row[i] != NULL) 
                 {
-                    printf("%-*s  ", max_lengths[i], row[i]);  // Imprimir alineado y con dos espacios
+                    printf("%-*s  ", max_lengths[i], row[i]);  /* Print aligned */
                 } 
                 else 
                 {
-                    printf("%-*s  ", max_lengths[i], "NULL");  // Manejar los NULL y dos espacios
+                    printf("%-*s  ", max_lengths[i], "NULL");  /* Manage NULL */
                 }
             }
             printf("\n");

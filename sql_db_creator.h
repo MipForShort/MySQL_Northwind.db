@@ -14,5 +14,6 @@ int print_menu(MYSQL *conn); /* Prototype to print the menu */
 void clear_terminal(); /* Prototype to clear window */
 void pause_for_a_while(int seconds); /* Prototype to wait n amount of seconds */
 void read_records(MYSQL *conn, char *table);  /* Prototype to SELECT * FROM 'TABLE' */
+void print_table (MYSQL *conn, char *table); /* Func that prints a given table */
 
 #endif
